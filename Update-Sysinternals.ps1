@@ -1,4 +1,26 @@
-﻿$SysIntPath = 'c:\SysInt'
+function Set-PathVariable {
+    param (
+        [string]$AddPath,
+        [string]$RemovePath
+    )
+    $regexPaths = @()
+    if ($PSBoundParameters.Keys -contains 'AddPath'){
+        $regexPaths += [regex]::Escape($AddPath)
+    }
+
+    if ($PSBoundParameters.Keys -contains 'RemovePath'){
+        $regexPaths += [regex]::Escape($RemovePath)
+    }
+    
+    $arrPath = $env:Path -split ';'
+    foreach ($path in $regexPaths) {
+        $arrPath = $arrPath | Where-Object {$_ -notMatch "^$path\\?"}
+    }
+    $env:Path = ($arrPath + $addPath) -join ';'
+    [System.Environment]::SetEnvironmentVariable('Path', $env:Path, [System.EnvironmentVariableTarget]::Machine)
+}
+
+$SysIntPath = 'c:\SysInt'
 $File = 'SysinternalsSuite.zip'
 $URL = "https://download.sysinternals.com/files/$File"
 $FilePath  = "$SysIntPath\$File"
@@ -8,7 +30,7 @@ $FilePath  = "$SysIntPath\$File"
 if (!(Test-Path $SysIntPath)){New-Item -Path $SysIntPath -ItemType "directory"}
 
 #Add to Path
-if ($Env:path -notlike "*$SysIntPath*") {$Env:path += ";$SysIntPath"}
+Set-PathVariable -AddPath $SysIntPath
 
 #Delete Old SysinternalsSuite.zip if it exists
 if (Test-Path $FilePath) {Remove-Item $FilePath}
